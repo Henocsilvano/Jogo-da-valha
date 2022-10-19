@@ -1,15 +1,12 @@
-import numpy as np
-
 class JogoDaVelha:
     def __init__(self):
-        self.jogador1 = False
-        self.jogador2 = False
+        self.parar = False
         self.jogo = ['_'] * 9
 
     # Função que inicia o jogo 
     def Iniciar(self):
         print('~'*40)
-        print('BEM-VINDO AO JOGO DA VELHA'.center(40, '~'))
+        print(f"\033[32m{'BEM-VINDO AO JOGO DA VELHA.':^40}\033[m")
         print('~' *40)
         print('Marque a posição de acordo com os numeros\nque representam os espaços abaixo:\n')
         print('Posições:')
@@ -17,20 +14,20 @@ class JogoDaVelha:
         print('4 5 6')
         print('7 8 9')
         while True:
+            self.MostrarGrade()
             while True:
                 confirmar = False
                 for jogador in range(1, 3):
-                    self.MostrarGrade()
-                    continuar = self.lançarResultado()
-                    if continuar == 1:
-                        confirmar = True
-                        break
+                    simbolo = '\033[32m⩙\033[m' if jogador == 1 else '\033[31mʘ\033[m'
                     print('~'*40)
                     jogada = self.validarJogada(jogador)
                     print('~'*40)
                     self.MarcarSimbolo(jogada, jogador)
-                    self.verificarVencedor(self.jogo)
-                    if self.jogador1 or self.jogador2:
+                    self.verificarVencedor(self.jogo, jogada, simbolo)
+                    self.MostrarGrade()
+                    continuar = self.lançarResultado(jogador)
+                    if continuar:
+                        confirmar = True
                         break
                 if confirmar:
                     break  
@@ -38,22 +35,17 @@ class JogoDaVelha:
     
     # Função que mostra os espaços (preenchidos/vazios)
     def MostrarGrade(self):
-        for indice in range(len(self.jogo)):
-            print(f'{self.jogo[indice]} ', end='')
-            if indice == 2 or indice == 5 or indice == 8:
-                print()
-
+        for linha in [self.jogo[i*3:(i+1)*3] for i in range(3)]:
+            print(*linha)
+            
     # Função para validar jogada
     def validarJogada(self,jogador):
         valor = 10
+        simbolo = "\033[32m⩙\033[m" if jogador == 1 else "\033[31mʘ\033[m"
         while True:
             try:
-                if jogador == 1:
-                    jogada = int(input(f'Jogador {jogador} [\033[32m⩙\033[m]: '))
-                    valor = jogada -1
-                elif jogador == 2:
-                    jogada = int(input(f'Jogador {jogador} [\033[31mʘ\033[m]: '))
-                    valor = jogada -1
+                jogada = int(input(f'Jogador {simbolo}: '))
+                valor = jogada -1
             except:
                 print('\033[32mMarque uma jogada entre 1 e 9\033[m')
                 print('~'*40)
@@ -75,83 +67,45 @@ class JogoDaVelha:
 
     # Função para marcar os sombolos apontados
     def MarcarSimbolo(self, jogda, jogador):
-        simbolo = ''
-        if jogador == 1:
-            simbolo =  '\033[32m⩙\033[m'
-        elif jogador == 2:
-            simbolo =  '\033[31mʘ\033[m'
+        simbolo = '\033[32m⩙\033[m' if jogador == 1 else '\033[31mʘ\033[m'
         self.jogo[jogda] = simbolo
 
     # Função para verificar o vencedor
-    def verificarVencedor(self, jogo):
-        s_X = '\033[32m⩙\033[m'
-        s_O = '\033[31mʘ\033[m'
-        l1 = jogo[0:3]
-        l2 = jogo[3:6]
-        l3 = jogo[6:]
-        jog = np.array([l1,l2,l3])
-        for linha in range(len(jog)):
-            if not s_O in jog[linha,:] and not '_' in jog[linha,:]:
-                self.jogador1 = True
-            if not s_X in jog[linha,:] and not '_' in jog[linha,:]:
-                self.jogador2 = True
-        for coluna in range(len(jog)):
-            if not s_O in jog[:,coluna] and not '_' in jog[:,coluna]:
-                self.jogador1 = True
-            if not s_X in jog[:,coluna] and not '_' in jog[:,coluna]:
-                self.jogador2 = True
-        if l1[0] == s_X and l2[1] == s_X and l3[2] == s_X:
-            self.jogador1 = True
-        if l1[2] == s_X and l2[1] == s_X and l3[0] == s_X:
-            self.jogador1 = True
-        if l1[2] == s_O and l2[1] == s_O and l3[0] == s_O:
-            self.jogador2 = True
-        if l1[0] == s_O and l2[1] == s_O and l3[2] == s_O:
-            self.jogador2 = True
+    def verificarVencedor(self, jogo, jogada, simbolo):
+        linha_ind = jogada // 3
+        linha = jogo[linha_ind*3: (linha_ind+1)*3]
+        if all([simb == simbolo for simb in linha]):
+            self.parar = True
 
-    def lançarResultado(self):
-        if self.jogador1 or self.jogador2:
+        col_ind = jogada % 3
+        coluna = [jogo[col_ind+i*3] for i in range(3)]
+        if all([simb == simbolo for simb in coluna]):
+            self.parar = True
+        
+        if jogada % 2 == 0:
+            diagonal1 = [jogo[i] for i in [0,4,8]]
+            if all([simb == simbolo for simb in diagonal1]):
+                self.parar = True
+            diagonal2 = [jogo[i] for i in [2,4,6]]
+            if all([simb == simbolo for simb in diagonal2]):
+                self.parar = True
+   
+   #Função para lançar o resultado do jogo
+    def lançarResultado(self, jogador):
+        if self.parar:
             print('~'*40)
             print('\033[32mFim do jogo!\033[m')
-        if self.jogador1:
-            print(f'\033[32mVitoria para o jogador 1!\033[m')
-            return 1
-        elif self.jogador2:
-            print(f'\033[32mVitoria para o jogador 2!\033[m')
-            return 1
+            print(f'\033[32mVitoria para o jogador [{"⩙" if jogador == 1 else "ʘ"}]!\033[m')
+            return True
         
         contador = self.jogo.count('_')
-        if contador == 1:
-            print('~'*40)
-            res = ' '
-            while res not in 'SN':
-                res = str(input('\033[32mContinuar com o jogo? [S/N]:\033[m ')).strip().upper()[0]
-            if res == 'N':
-                print('~'*40)
-                print('\033[32mJogo interronpido!\033[m')
-                print('\033[32mSem vencedor!\033[m')
-                return 1
-            elif res == 'S':
-                return 0
-        elif contador == 2:
-            print('~'*40)
-            print('\033[32mRestam apenas 2 jogada possivel\033[m')
-            res = ' '
-            while res not in 'SN':
-                res = str(input('\033[32mQuer continuar? [S/N]:\033[m ')).strip().upper()[0]
-            if res == 'N':
-                print('~'*40)
-                print('\033[32mJogo terminado!\033[m')
-                print('\033[32mSem vencedor!\033[m')
-                return 1
-            elif res == 'S':
-                return 0
-        elif contador == 0:
+        if contador == 0:
             print('~'*40)
             print('\033[32mFim do jogo!\033[m')
             print('\033[32mSem vencedor!\033[m')
-            return 1 
+            return True
 
+# Função para iniciar o jogo
 def jogar():
     while True:
         jogo = JogoDaVelha()
@@ -161,3 +115,6 @@ def jogar():
             res = str(input('Quer jogar de novo? [S/N]: ')).strip().upper()[0]
         if res == 'N':
             break
+
+if __name__ == '__main__':
+    jogar()
